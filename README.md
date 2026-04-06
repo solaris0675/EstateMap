@@ -1,6 +1,6 @@
 # EstateMap
 A map-based real estate platform where buyers discover listings on an interactive map, owners post properties, and admins approve them 
-# 🗺️ EstateMap — Premium Property Finder
+# 🗺️ EstateMap — Property Finder
 
 A real-time, map-based real estate platform where buyers can discover properties, owners can list them, and admins can moderate listings — all in a single-page, no-framework web app.
 
