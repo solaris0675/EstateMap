@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstateMap - Premium Property Finder</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Main Map Container -->
+    <div id="map"></div>
+
+    <!-- Sidebar / Floating Panel -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fa-solid fa-map-location-dot"></i> EstateMap
+            </div>
+            <div class="search-bar">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" placeholder="Search locations...">
+            </div>
+            <div class="controls">
+                <div id="userRoleDisplay"
+                    style="text-align:center; padding:5px; margin-bottom:10px; font-size:0.85rem; color:#64748b; background:#f1f5f9; border-radius:4px; display:none;">
+                    Role: <span id="currentRoleText">Guest</span>
+                </div>
+                <button class="btn-primary" id="listPropertyBtn"
+                    style="display: none; width: 100%; margin-bottom: 10px;">
+                    <i class="fa-solid fa-plus"></i> List Property
+                </button>
+                <button class="btn-secondary" id="myListingsBtn"
+                    style="display: none; width: 100%; margin-bottom: 10px; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
+                    <i class="fa-solid fa-list"></i> My Listings
+                </button>
+                <button class="btn-primary" id="adminDashboardBtn"
+                    style="display: none; width: 100%; margin-bottom: 10px; background-color: #f59e0b; border-color: #d97706;">
+                    <i class="fa-solid fa-shield-halved"></i> Admin Dashboard
+                </button>
+                <button id="switchRoleBtn"
+                    style="width:100%; margin-bottom:10px; padding:8px; background:none; border:1px dashed #94a3b8; color:#64748b; cursor:pointer; display:none; border-radius:6px; font-size:0.8rem;">
+                    Switch to Property Owner
+                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" id="inboxBtn" style="flex: 1;">
+                        <i class="fa-solid fa-inbox"></i> Inbox <span id="msgCount"
+                            style="background:red; color:white; padding:2px 6px; border-radius:10px; font-size:0.7rem;">0</span>
+                    </button>
+                    <button class="btn-primary" id="loginSidebarBtn" style="flex: 1; display: none;">
+                        <i class="fa-solid fa-sign-in-alt"></i> Login
+                    </button>
+                    <button class="btn-secondary" id="logoutBtn"
+                        style="flex: 1; background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; display: none;">
+                        <i class="fa-solid fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="listings-container" id="listings">
+            <!-- Listings will be injected here via JS -->
+            <div class="empty-state">
+                <p>Select a marker on the map to view details.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Details Overlay (Initially Hidden) -->
+    <div class="property-overlay hidden" id="propertyOverlay">
+        <button class="close-btn" id="closeOverlay"><i class="fa-solid fa-xmark"></i></button>
+        <div class="property-image" id="overlayImage">
+            <button class="btn-chat" id="viewPhotosBtn"
+                style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"><i
+                    class="fa-solid fa-images"></i> View Photos</button>
+        </div>
+        <div class="property-content">
+            <div class="property-header">
+                <h2 id="overlayTitle">Luxury Villa</h2>
+                <span class="price-tag" id="overlayPrice">$2.5M</span>
+            </div>
+            <p class="location"><i class="fa-solid fa-location-dot"></i> <span id="overlayLocation">Beverly Hills,
+                    CA</span></p>
+
+            <div class="property-stats">
+                <span><i class="fa-solid fa-bed"></i> 5 Beds</span>
+                <span><i class="fa-solid fa-bath"></i> 4 Baths</span>
+                <span><i class="fa-solid fa-ruler-combined"></i> 4,500 sqft</span>
+            </div>
+
+            <div class="price-history" style="margin-bottom: 30px;">
+                <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 15px;">Price History</h3>
+                <canvas id="priceChart"></canvas>
+            </div>
+
+            <p class="description" id="overlayDescription">
+                Stunning modern villa with panoramic views. Features an infinity pool, home theater, and
+                state-of-the-art kitchen.
+            </p>
+
+            <div class="owner-section">
+                <img src="https://i.pravatar.cc/150?img=3" alt="Owner" class="owner-avatar" id="ownerAvatar">
+                <div class="owner-info">
+                    <h4 id="ownerName">Property Owner</h4>
+                </div>
+                <button class="btn-chat" id="startChatBtn"><i class="fa-solid fa-comments"></i> Chat</button>
+                <button class="btn-chat hidden" id="closeListingBtn" style="background: #ef4444; margin-left: 10px;"><i
+                        class="fa-solid fa-trash"></i> Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inbox Modal -->
+    <div class="chat-modal hidden" id="inboxModal" style="width: 350px; height: 500px; z-index: 2100;">
+        <div class="chat-header">
+            <h3><i class="fa-solid fa-inbox"></i> Messages</h3>
+            <button class="close-chat" id="closeInbox"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-body" id="inboxList" style="padding: 0;">
+            <!-- Conversation Items -->
+            <div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-muted);">
+                No messages yet.
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal (Initially Hidden) -->
+    <div class="chat-modal hidden" id="chatModal">
+        <div class="chat-header">
+            <div class="chat-user">
+                <img src="https://i.pravatar.cc/150?img=3" alt="User" id="chatUserAvatar">
+                <span id="chatUserName">Chat</span>
+            </div>
+            <button class="close-chat" id="closeChat"><i class="fa-solid fa-minus"></i></button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="message received">
+                <p>Hello! Are you interested in this property?</p>
+                <span class="time">10:30 AM</span>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button id="sendMessage"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal" style="z-index: 5000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px;">
+            <div class="login-header" style="margin-bottom: 20px;">
+                <h1 style="color: var(--primary); font-size: 2rem; margin-bottom: 10px;"><i
+                        class="fa-solid fa-map-location-dot"></i> EstateMap</h1>
+                <p style="color: var(--text-muted);">Find your dream home or list your property.</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label style="text-align: left;">Email</label>
+                    <input type="email" id="loginEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label style="text-align: left;">Password</label>
+                    <input type="password" id="loginPass" placeholder="********" required>
+                </div>
+                <div class="form-group">
+                    <label style="text-align: left;">I am a...</label>
+                    <select id="loginRole"
+                        style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none;">
+                        <option value="buyer">Home Buyer</option>
+                        <option value="owner">Property Owner</option>
+                        <option value="admin">Admin (Approver)</option>
+                    </select>
+                </div>
+                <div id="authError" style="color: red; font-size: 0.8rem; margin-top: 10px; display: none;"></div>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="#" id="forgotPasswordLink"
+                        style="color: var(--primary); font-size: 0.85rem; text-decoration: none;">Forgot Password?</a>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn-primary" id="btnSignIn" style="flex: 1;">Sign In</button>
+                    <button type="button" class="btn-primary" id="btnSignUp"
+                        style="flex: 1; background: var(--text-muted);">Register</button>
+                </div>
+                <button type="button" id="btnGoogle"
+                    style="margin-top:10px; width:100%; padding:10px; background:white; color:#333; border:1px solid #ccc; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Continue
+                    with Google
+                </button>
+            </form>
+            <button id="closeLoginModal"
+                style="margin-top: 15px; background: none; border: none; color: #64748b; cursor: pointer; text-decoration: underline;">Continue
+                as Guest</button>
+        </div>
+    </div>
+
+    <!-- My Listings Modal (Owner) -->
+    <div class="modal-overlay hidden" id="myListingsModal" style="z-index: 5000;">
+        <div class="modal-content" style="max-width: 600px; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">My Listings</h2>
+                <button id="closeMyListings"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div id="myListingsList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Items go here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div class="modal-overlay hidden" id="adminModal" style="z-index: 5000;">
+        <div class="modal-content" style="max-width: 600px; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Admin Dashboard</h2>
+                <button id="closeAdmin"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <button id="adminTabPending"
+                    style="background:none; border:none; font-weight:bold; color:var(--primary); cursor:pointer;">Pending</button>
+                <!-- Could add 'All Listings' tab later -->
+            </div>
+            <div id="adminList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Pending items go here -->
+                <p style="text-align: center; color: #64748b;">No pending listings.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Gallery Modal -->
+    <div class="modal-overlay hidden" id="galleryModal" style="z-index: 4000;">
+        <div class="modal-content" style="max-width: 800px; background: transparent; box-shadow: none;">
+            <button class="close-modal" id="closeGallery"
+                style="position: absolute; top: -40px; right: 0; color: white; font-size: 2rem;"><i
+                    class="fa-solid fa-xmark"></i></button>
+            <div class="gallery-grid" id="galleryGrid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                <!-- Images injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Property Modal -->
+    <div class="modal-overlay hidden" id="addPropertyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>List Your Property</h2>
+                <button class="close-modal" id="closeAddProperty"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPropertyForm">
+                    <div class="form-group">
+                        <label>Property Title</label>
+                        <input type="text" id="propTitle" placeholder="e.g. Sunny Beach House" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="text" id="propPrice" placeholder="$500,000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sq Ft</label>
+                            <input type="number" id="propSqft" placeholder="1200" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Beds</label>
+                            <input type="number" id="propBeds" placeholder="3" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Baths</label>
+                            <input type="number" id="propBaths" placeholder="2" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Image URL</label>
+                        <input type="url" id="propImage" placeholder="https://example.com/image.jpg">
+                        <small>Leave empty for random luxury placeholder</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="propDesc" rows="3" placeholder="Describe the key features..."></textarea>
+                    </div>
+                    <input type="hidden" id="propLat">
+                    <input type="hidden" id="propLng">
+                    <button type="submit" class="btn-primary">Post Listing</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast hidden" id="toast">
+        <i class="fa-solid fa-info-circle"></i>
+        <span id="toastMessage">Click on the map to set location</span>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Firebase SDK (Compat for easier local testing) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Project Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
